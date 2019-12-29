@@ -17,6 +17,7 @@ Description of those settings:
 * $cooldown - delay in seconds between different posts
 * $wipe - delay in seconds between same posts
 * $thumbnails - path to the folder, where thumbnails would be stored
+* $salt - md5 salt
 * $cookiesEnables - IT IS NOT A SETTING VARIABLE
   
 ## Lazy setup
