@@ -17,7 +17,6 @@ $sPostTooLong="<h1>Error: Post is too long</h1>";
 $sLockError="<h1>Error: Can't lock database</h1>";
 $sWrongExt="<h1>Error: File is not an image or webm video</h1>";
 $sBan="<center><h1>Banned</h1><br><img src=\"banned.png\" width=\"400\"></center><br><hr> Reason: ";
-
 $sCooldown="<h1>Error: You're posting too fast, or trying to post same text.</h1>";
 $sSticky="<p><b>Sticky</b> <b>##Admin##</b></p><p><img src=\"terry.jpg\" width=\"200\" align=\"left\">Best programmer ever lived <br> <b>THIS IS SFW (SAFE FOR WORK) BOARD.</b><br>Please, keep topics technology, DIY or science related.</p><br clear=\"left\"><hr>";
 $sCapthaFail="<h1>Error: Captcha is missing or wrong</h1>";
@@ -82,7 +81,7 @@ function cookieCheck(){
     if (!isset($_COOKIE["poke"])){
         setcookie("poke", "yes");
         if (htmlspecialchars($_GET["cookieCheck"])!="yes"){
-            redirect($_SERVER["PHP_SELF"]."?cookieCheck=yes");
+            redirect($_SERVER["PHP_SELF"]."?cookieCheck=yes"."&thread=".htmlspecialchars($_GET["thread"]));
         }
         //Maybe, user visits website for a first time
         if (!isset($_COOKIE["poke"])){
@@ -163,7 +162,16 @@ function loadDatabase(){
     }
 }
 function loadBans(){
-    
+    global $bans, $sDatabaseError;
+    if (($file=fopen("$bans", "r"))!==FALSE){
+        while(($data=fgetdb($file))!==FALSE){
+            $databaseArray[$data[0]]=$data[1];
+        }
+        fclose($file);
+        return $databaseArray;
+    }else{
+        showAndDie($sDatabaseError);
+    }
 }
 function showThreads(){
     global $pictures, $sReplies, $webmLogo, $thumbnails;
@@ -183,7 +191,7 @@ function showThreads(){
     }
 }
 function putIp($post, $time) {
-   
+    
 }
 function showThread($dig){
     global $pictures, $sThreadNotFound, $webmLogo, $thumbnails;
@@ -326,7 +334,7 @@ function posting($captcha){
             showAndDie($sLockError);
         }
         uploadImage($lastDigits+1);
-        
+       
         redirect($_SERVER['PHP_SELF']."?thread=".($lastDigits+1) );
         
     }
@@ -346,7 +354,7 @@ function checkBan(){
     
 }
 function captchaGen(){
-    
+   
 }
 function captchaCheck(){
     
