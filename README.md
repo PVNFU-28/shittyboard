@@ -27,4 +27,4 @@ Description of those settings:
 1. Create folder "thumbnails"
 
 ## Demo:
-https://shittyboard.ddns.net (Website might me unavailable, it is normal, it would mean that I lost interest in project)
+https://shittyboard.ddns.net (Website might be unavailable, it is normal, it would mean that I lost interest in project)
