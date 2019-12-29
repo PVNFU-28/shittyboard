@@ -1,0 +1,448 @@
+<?php
+// Improves readibility and usability on mobile devices
+echo '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />';
+echo "<style>body{word-wrap: break-word;}</style>";
+
+// UI strings
+$sBoardName="Imageboard";
+$sPostReply="Post Reply";
+$sPost="Post";
+$sAnonymous="Anonymous";
+$sReplies="replies";
+$sDatabaseError="<h1>Error: Database error</h1>";
+$sThreadNotFound="<h1>Error: Thread not found</h1>";
+$sNameTooLong="<h1>Error: Name is too long</h1>";
+$sIllegalPost="<h1>Error: Illegal post</h1>";
+$sPostTooLong="<h1>Error: Post is too long</h1>";
+$sLockError="<h1>Error: Can't lock database</h1>";
+$sNotImage="<h1>Error: File is not an image</h1>";
+$sWrongExt="<h1>Error: unknown error</h1>";
+$sBan="<center><h1>Banned</h1><br><img src=\"banned.png\" width=\"400\"></center><br><hr> Reason: ";
+$sCooldown="<h1>Error: You're posting too fast, or trying to post same text.</h1>";
+$sSticky="<p><b>Sticky</b> <b>##Admin##</b></p><p><img src=\"terry.jpg\" width=\"200\" align=\"left\">Best programmer ever lived <br> <b>THIS IS SFW (SAFE FOR WORK) BOARD.</b><br>Please, keep topics technology, DIY or science related.</p><br clear=\"left\"><hr>";
+$sCapthaFail="<h1>Error: Captcha is missing or wrong</h1>";
+
+//Settings 
+$webmLogo="webm.jpg";
+$logo="logo.png";
+$background="bgcolor=\"white\"";//background=\"bg.png\"
+$database="private/posts.csv";
+$bans="private/bans.csv";
+$pictures="images/";
+$maxThreads=100;
+$maxPostLength=1500;
+$maxUpload=4096+2048;
+$maxLines=30;
+$cooldown=10;
+$wipe=120;
+$thumbnails="thumbnails";
+$salt="penis";
+$cookiesEnabled=FALSE;
+
+function showOP($digits, $name, $replies, $sReplies, $pictures, $webmLogo, $thumbnails, $text){
+    if ($replies!==FALSE){
+        echo "<p><b>#$digits (OP)</b> $name <i><a href=\"".$_SERVER['PHP_SELF']."?thread=$digits\">[$replies $sReplies]</a></i></p>";
+    }else{
+        echo "<p><b>#$digits (OP)</b> $name</p>";
+    }
+        if($img=glob("$pictures/$digits.*")){
+            $ext=strtolower(pathinfo($img[0],PATHINFO_EXTENSION));
+            if ($ext=="webm"){
+                echo "<p><a href=\"$img[0]\"><img src=\"$webmLogo\" width=\"200\" align=\"left\"></a>$text</p><br clear=\"left\"><hr>";
+            }else{
+                echo "<p><a href=\"$img[0]\"><img src=\"$thumbnails/$digits.jpg\" width=\"200\" align=\"left\"></a>$text</p><br clear=\"left\"><hr>";
+            }
+    }else{
+        echo "<p>$text</p><br clear=\"left\"><hr>";
+    }
+}
+function showPost($digits, $name, $pictures, $webmLogo, $thumbnails, $text){
+    if ($replies!==FALSE){
+        echo "<p><b>#$digits</b> $name</p>";
+    }else{
+        echo "<p><b>#$digits (OP)</b> $name</p>";
+    }
+        if($img=glob("$pictures/$digits.*")){
+            $ext=strtolower(pathinfo($img[0],PATHINFO_EXTENSION));
+            if ($ext=="webm"){
+                echo "<p><a href=\"$img[0]\"><img src=\"$webmLogo\" width=\"150\" align=\"left\"></a>$text</p><br clear=\"left\"><hr>";
+            }else{
+                echo "<p><a href=\"$img[0]\"><img src=\"$thumbnails/$digits.jpg\" width=\"150\" align=\"left\"></a>$text</p><br clear=\"left\"><hr>";
+            }
+    }else{
+        echo "<p>$text</p><br clear=\"left\"><hr>";
+    }
+}
+function redirect($url){
+    ob_end_clean();
+    header('Location: '.$url);
+    die;
+}
+function cookieCheck(){
+    global $cookiesEnabled;
+    if (!isset($_COOKIE["poke"])){
+        setcookie("poke", "yes");
+        if (htmlspecialchars($_GET["cookieCheck"])!="yes"){
+            redirect($_SERVER["PHP_SELF"]."?cookieCheck=yes");
+        }
+        //Maybe, user visits website for a first time
+        if (!isset($_COOKIE["poke"])){
+            //User is a fucking paranoic. 
+            ini_set("session.use_cookies", 0);
+            ini_set("session.use_only_cookies", 0);
+            ini_set("session.use_trans_sid", 1);
+            ini_set("session.cache_limiter", "");
+            $cookiesEnabled=FALSE;
+            session_start();
+            return FALSE;
+        }
+    }
+    $cookiesEnabled=TRUE;
+    session_start();
+    return TRUE;
+    //Well, cookies are enabled.
+}
+function getIp() {
+    global $salt;
+    $ipaddress = '';
+    if (getenv('HTTP_CLIENT_IP'))
+        $ipaddress = getenv('HTTP_CLIENT_IP');
+    else if(getenv('HTTP_X_FORWARDED_FOR'))
+        $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
+    else if(getenv('HTTP_X_FORWARDED'))
+        $ipaddress = getenv('HTTP_X_FORWARDED');
+    else if(getenv('HTTP_FORWARDED_FOR'))
+        $ipaddress = getenv('HTTP_FORWARDED_FOR');
+    else if(getenv('HTTP_FORWARDED'))
+       $ipaddress = getenv('HTTP_FORWARDED');
+    else if(getenv('REMOTE_ADDR'))
+        $ipaddress = getenv('REMOTE_ADDR');
+    else
+        $ipaddress = "";
+    return md5($salt+$ipaddress+$salt);
+}
+function showAndDie($error){
+    ob_end_clean();
+    echo "$error";
+    die;
+}
+function fgetdb($file){
+    $str=fgets($file);
+    if (!feof($file)){
+        $str=explode("\t", str_replace("\n", "",$str));
+        return $str;
+    }else{
+        return FALSE;
+    }
+}
+function showHeader(){
+    global $sBoardName, $logo, $background;
+    echo "<title>$sBoardName</title><body $background><center><a href=\"".$_SERVER['PHP_SELF']."\"><img src=$logo width=\"300\" height=\"100\"></a><h1>$sBoardName</h1><hr></center>";
+}
+function showForm($captcha=""){
+    global $sPostReply, $sPost, $sAnonymous;
+    echo "<center><h3>$sPostReply</h3>
+    <form method=\"POST\" enctype=\"multipart/form-data\">
+    <input name=\"postName\" size=\"100\" style=\"width:95%;\" value=\"$sAnonymous\"><br>
+    <textarea name=\"postText\" cols=\"100\" rows=\"10\"style=\"width:95%;\"></textarea><br>$captcha<br>
+    <input type=\"file\" name=\"postFile\"><input type=\"submit\" name=\"postButton\" value=\"$sPost\"></form><hr></center>";
+}
+function loadDatabase(){
+    global $database, $sDatabaseError;
+    if(($file=fopen("$database","r"))!==FALSE){
+        while(($data=fgetdb($file))!==FAlSE){
+            $databaseArray[$data[0]][0]=$data[1];
+            $databaseArray[$data[0]][1]=$data[2];
+            $databaseArray[$data[0]][2]=$data[3];
+            $databaseArray[$data[0]][3]=$data[4];
+            $databaseArray[$data[0]][4]=$data[5];
+        }
+        fclose($file);
+        return $databaseArray;
+    }else{
+        showAndDie($sDatabaseError);
+    }
+}
+function loadBans(){
+    global $bans, $sDatabaseError;
+    if (($file=fopen("$bans", "r"))!==FALSE){
+        while(($data=fgetdb($file))!==FALSE){
+            $databaseArray[$data[0]]=$data[1];
+        }
+        fclose($file);
+        return $databaseArray;
+    }else{
+        showAndDie($sDatabaseError);
+    }
+}
+function showThreads(){
+    global $pictures, $sReplies, $webmLogo, $thumbnails;
+    $data=loadDatabase();
+    $threads=array();
+    foreach ($data as $digits => $post){
+        if($post[0]!="T" && $data[$post[0]][0]=="T"){
+            $threads[$post[0]]+=1;
+        }else if (($threads[$digits]==0)&& $post[0]=="T"){
+             $threads[$digits]=0;
+        }
+    }
+    foreach ($threads as $digits=>$replies){
+        $name=$data[$digits][2];
+        $text=$data[$digits][1];
+        showOP($digits, $name, $replies, $sReplies, $pictures, $webmLogo, $thumbnails, $text);
+    }
+}
+function putIp($post, $time) {
+    //Proprietary
+}
+function showThread($dig){
+    global $pictures, $sThreadNotFound, $webmLogo, $thumbnails;
+    $data=loadDatabase();
+    $posts=array();
+    $flag=TRUE;
+    if ($data[$dig]==NULL){
+        showAndDie($sThreadNotFound);
+    }
+    if ($data[$dig][0]!="T"){
+        if($data[$data[$dig][0]][0]=="T"){
+            redirect($_SERVER['PHP_SELF']."?thread=".$data[$dig][0]);
+        }else{
+            showAndDie($sThreadNotFound);
+        }
+    }
+    foreach ($data as $digits => $post){
+        if($post[0]==$dig){
+            $posts[]=$digits;
+        }
+    }
+    showOP($dig, $data[$dig][2], false, false, $pictures, $webmLogo, $thumbnails, $data[$dig][1]);
+    sort($posts);
+    foreach($posts as $digits){
+        showPost($digits, $data[$digits][2], $pictures, $webmLogo, $thumbnails, $data[$digits][1]);
+    }
+}
+function getName(){
+    global $sNameTooLong;
+    $name=$_POST["postName"];
+    if (strlen($name)>128){
+        ob_end_clean();
+        echo "$sNameTooLong";
+        die;
+    }
+    return preg_replace("/[^A-Za-z0-9_ .:]/", '', $name);
+}
+function getPostText(){
+    global $sIllegalPost, $sPostTooLong, $maxLines, $maxPostLength;
+    $txt=($_POST["postText"]);
+    if (strlen($txt)>$maxPostLength){
+        showAndDie($sPostTooLong);
+    }
+    $txt=$txt."\n";
+    $txt=str_replace("gay admin", "cool admin", $txt);
+    $txt=str_replace("admin is gay", "admin is Chad", $txt);
+    $txt=str_replace("admin is faggot", "admin is ubermensch", $txt);
+    $txt=str_replace("admin is fag", "admin is genius", $txt);
+    $txt=str_replace("admin is a gay", "admin is Chad", $txt);
+    $txt=str_replace("admin is a faggot", "admin is ubermensch", $txt);
+    $txt=str_replace("admin is a fag", "admin is genius", $txt);
+    $txt=str_replace("shitty admin", "awesome admin", $txt);
+    $txt=str_replace("&", "&amp;", $txt);
+    $txt=str_replace("'", "&#039;", $txt);
+    $txt=str_replace("\"", "&quot;", $txt);
+    $txt=str_replace("<", "&lt;", $txt);
+    $txt=str_replace(">", "&gt;", $txt);
+    $txt=preg_replace('/^(&gt;&gt;(.*))\n/m', '<font color="blue" class="bluetext">\\1</font>' . "\n", strip_tags($txt)); 
+    $txt=preg_replace('/^(&lt;&lt;(.*))\n/m', '<font color="#ee6b00" class="orangetext">\\1</font>' . "\n", $txt);
+    $txt=preg_replace('/^(&gt;(.*))\n/m', '<font color="green" class="greentext">\\1</font>' . "\n", $txt);   
+    $txt=preg_replace('/^(&lt;(.*))\n/m', '<font color="red" class="redtext">\\1</font>' . "\n", $txt);
+    $txt=substr($txt, 0, -1);
+    $txt=str_replace("\n", "<br>", $txt);
+    $txt=str_replace("\r", "", $txt);
+    if (strstr($txt, "\t")){
+        showAndDie($sIllegalPost);
+    }else if (strstr($txt, "\u{200E}")){
+        showAndDie($sIllegalPost);
+    }else if (strstr($txt, "\u{200F}")){
+        showAndDie($sIllegalPost);
+    }else if (substr_count($txt, "<br>")>$maxLines){
+        showAndDie($sIllegalPost);
+    }
+    return $txt;
+}
+function uploadImage($newPost){
+    global $pictures, $thumbnails, $maxUpload;
+    $check=getimagesize($_FILES["postFile"]["tmp_name"]);
+    $imageFileType = strtolower(pathinfo($_FILES["postFile"]["name"],PATHINFO_EXTENSION));
+    if ($imageFileType=="webm"){
+        $check=TRUE;
+    }
+    if ($check!==FALSE){
+        if($_FILES["postFile"]["size"] <= $maxUpload*1024){
+            if ($imageFileType=="webm"){
+                move_uploaded_file($_FILES["postFile"]["tmp_name"],$pictures."/".$newPost."t.".$imageFileType);
+                exec('ffmpeg -i '.$pictures."/".$newPost."t.".$imageFileType.' -c:v libvpx -crf 63  -b:v 250K '.$pictures."/".$newPost.".webm".' 2>&1');
+                unlink($pictures."/".$newPost."t.".$imageFileType);
+                
+                return "webm";
+            }
+            if($imageFileType == "jpg" || $imageFileType == "png" || $imageFileType == "jpeg" || $imageFileType == "gif" || $imageFileType == "webp" || $imageFileType == "webm"){
+                move_uploaded_file($_FILES["postFile"]["tmp_name"],$pictures."/".$newPost."t.".$imageFileType);
+                if($imageFileType!="webm"){
+                    if ($imageFileType == "gif"){
+                        exec('ffmpeg -i '.$pictures."/".$newPost."t.".$imageFileType.' -c:v libvpx -crf 63 -threads 0 -auto-alt-ref 0 -an -b:v 250K '.$pictures."/".$newPost.".webm".' 2>&1', $output);
+                        //print_r($output);
+                        //unlink($pictures."/".$newPost."t.".$imageFileType);
+                        //die;
+                    }else{
+                        $imagick=new \Imagick(realpath($pictures."/".$newPost."t.".$imageFileType));
+                            //$imagick->setCompressionQuality(1);
+                        $imagick->resizeImage(250,250,Imagick::FILTER_POINT,1,TRUE);
+                        $imagick->setImageBackgroundColor('white');
+                        $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
+                        $imagick->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
+                        $imagick->setImageCompression(\Imagick::COMPRESSION_JPEG);
+                        $imagick->setImageCompressionQuality(13);
+                        $imagick->setFormat("jpg");
+                        $imagick->writeImage("$thumbnails/$newPost.jpg");
+                    
+                        $imagick=new \Imagick(realpath($pictures."/".$newPost."t.".$imageFileType));
+                        $imagick->resizeImage($imagick->getImageWidth()+5,$imagick->getImageHeight()+5 ,Imagick::FILTER_CUBIC,1,TRUE);
+                        $imagick->setImageBackgroundColor('white');
+                        $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
+                        $imagick->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
+                        $imagick->setImageCompression(\Imagick::COMPRESSION_JPEG);
+                        //$imagick->addNoiseImage(\Imagick::NOISE_GAUSSIAN, \imagick::CHANNEL_DEFAULT);
+                        $imagick->setImageCompressionQuality(50);
+                        $imagick->setFormat("jpg");
+                        $imagick->writeImage("$pictures/$newPost.jpg");
+                        
+                    }
+                    unlink($pictures."/".$newPost."t.".$imageFileType);
+                }
+            }
+        }
+    }
+}
+function posting($captcha){
+     global $sThreadNotFound, $sLockError, $sDatabaseError, $database, $maxThreads, $sCooldown,$cooldown, $wipe, $maxUpload, $pictures, $thumbnails, $sCapthaFail;
+     if ($dig=htmlspecialchars($_GET["thread"])){
+        if (loadDatabase()[$dig][0]!="T"){
+            ($sThreadNotFound);
+        }
+     }
+     $postTime=time();
+     if (isset($_POST["postButton"])){
+        if (!$captcha){
+            showAndDie($sCapthaFail);
+        }
+        $name=getName();
+        $txt=getPostText();
+        if(($file=fopen("$database", "r+"))!=FALSE){
+            if(flock($file, LOCK_EX)==FALSE){
+                flock($file, LOCK_UN);
+                fclose($file);
+                showAndDie($sLockError);
+            }
+            $currentPost=array();
+            $lastPost=fgetdb($file);
+            if(($lastPost[4]==getIp() && $postTime-$lastPost[5]<$cooldown)||($lastPost[2]==$txt && $postTime-$lastPost[5]<$wipe)){
+                flock($file, LOCK_UN);
+                fclose($file);
+                showAndDie($sCooldown);
+            }
+            rewind($file);
+            if($dig=htmlspecialchars($_GET["thread"])){
+                $newPost=fgetdb($file)[0]+1;
+                $currentPosts[]=($newPost . "\t$dig\t". "$txt\t" . "$name\t" . getIp() . "\t$postTime" . "\n");
+            }else{
+                $newPost=fgetdb($file)[0]+1;
+                $currentPosts[]=($newPost . "\tT\t". "$txt\t" . "$name\t" . getIp() . "\t$postTime"  . "\n");
+            }
+            rewind($file);
+            while ((($temp=fgets($file))!==FALSE)){
+                $currentPosts[]=$temp;
+            }
+            rewind($file);
+            foreach ($currentPosts as $entry){
+                fwrite($file, $entry);
+            }
+            flock($file, LOCK_UN);
+            fclose($file);
+            uploadImage($newPost);
+            putIp($newPost, $postTime);
+            if ($dig=htmlspecialchars($_GET["thread"])){
+                ob_end_clean();
+                header('Location: '.$_SERVER['PHP_SELF']."?thread=$dig");
+            }else{
+                ob_end_clean();
+                header('Location: '.$_SERVER['PHP_SELF']."?thread=$newPost");
+            }
+        }else{
+            showAndDie($sDatabaseError);
+        }
+     }
+}
+function darkMode(){
+    if ("yes"==htmlspecialchars($_GET["black"])){
+        $_SESSION["black"]=TRUE;
+    }else if ("no"==htmlspecialchars($_GET["black"])){
+        $_SESSION["black"]=FALSE;
+    }
+    if ($_SESSION["black"]==TRUE){
+        echo "<style>body {background-color: #1d1f21;color: #c5c8c6;} a {color: #81a2be;} a:hover {color: #5f89ac;} textarea {background-color: #282a2e;color: #e0e0e0;border: 1px solid #373b41;}input {background-color: #282a2e;color: #e0e0e0;border: 1px solid #373b41;} .greentext{color: #789922;}.redtext {color: #cc6666;}.bluetext {color: #81a2be;}.orangetext {color: #de935f;}</style>";
+
+    }
+}
+function checkBan(){
+    global $sBan;
+    $bans=loadBans();
+    if(array_key_exists(GetIp(), $bans)){
+        echo "$sBan".$bans[GetIp()];
+        die;
+    }
+}
+function captchaGen(){
+    //Proprietary
+}
+function captchaCheck(){
+    //Proprietary
+}
+function showStream(){
+    global $pictures, $sReplies, $webmLogo, $thumbnails;
+    $data=loadDatabase();
+    $threads=array();
+    foreach ($data as $digits => $post){
+        $name=$post[2];
+        $text=$post[1];
+        echo "<p><b>#$digits</b> $name <i><a href=\"".$_SERVER['PHP_SELF']."?thread=$digits\">[$sReplies]</a></i></p>";
+        if($img=glob("$pictures/$digits.*")){
+            $ext=strtolower(pathinfo($img[0],PATHINFO_EXTENSION));
+            if ($ext=="webm"){
+                echo "<p><a href=\"$img[0]\"><img src=\"$webmLogo\" width=\"200\" align=\"left\"></a>$text</p><br clear=\"left\"><hr>";
+            }else{
+                echo "<p><a href=\"$img[0]\"><img src=\"$thumbnails/$digits.jpg\" width=\"200\" align=\"left\"></a>$text</p><br clear=\"left\"><hr>";
+            }
+        }else{
+            echo "<p>$text</p><br clear=\"left\"><hr>";
+        }
+    }
+}
+
+cookieCheck();
+checkBan();
+posting(captchaCheck());
+darkMode();
+showHeader();
+if (htmlspecialchars($_GET["stream"])=="yes"){
+    showStream();
+}else{
+    showForm(captchaGen());
+    if($dig=htmlspecialchars($_GET["thread"])){
+        showThread($dig);
+    }else{
+        echo "$sSticky";
+        showThreads();
+    }
+}
+echo "<center>Shittyboard V4.5<br><a href=\"".$_SERVER["PHP_SELF"]."?black=yes\">[Dark mode]</a> <a href=\"".$_SERVER["PHP_SELF"]."?black=no\">[Normal mode]</a><br><a href=\"".$_SERVER["PHP_SELF"]."?stream=yes\">[All posts]</a><a href=\"".$_SERVER["PHP_SELF"]."?stream=no\">[Show threads]</a><br><a href=\"report.php\">[Report]</a><br>All trademarks and copyrights on this page are owned by their respective parties. Images uploaded are the responsibility of the Poster. Comments are owned by the Poster.</center>";
+?>
