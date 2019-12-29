@@ -1,6 +1,6 @@
 # shittyboard
 Imageboard engine written in PHP, that uses CSV-like file as database
-##Configuring settings
+## Configuring settings
 Settings are stored in PHP file, as global variables. 
 Description of those settings:
 l. Variables that begin with "$s" are UI strings. This might be useful if you would like to translate UI. 
@@ -19,7 +19,7 @@ l. $wipe - delay in seconds between same posts
 l. $thumbnails - path to the folder, where thumbnails would be stored
 l. $cookiesEnables - IT IS NOT A SETTING VARIABLE
   
-##Lazy setup
+## Lazy setup
 l. Copy board.php
 l. Create file "/private/posts.csv" and protect it from outside world (for ex. .htaccess)
 l. Create file "/private/bans.csv"
