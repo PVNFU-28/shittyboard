@@ -1,4 +1,4 @@
-<?php
+<?php 
 // Improves readibility and usability on mobile devices
 echo '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />';
 echo "<style>body{word-wrap: break-word;}</style>";
@@ -15,28 +15,27 @@ $sNameTooLong="<h1>Error: Name is too long</h1>";
 $sIllegalPost="<h1>Error: Illegal post</h1>";
 $sPostTooLong="<h1>Error: Post is too long</h1>";
 $sLockError="<h1>Error: Can't lock database</h1>";
-$sNotImage="<h1>Error: File is not an image</h1>";
-$sWrongExt="<h1>Error: unknown error</h1>";
+$sWrongExt="<h1>Error: File is not an image or webm video</h1>";
 $sBan="<center><h1>Banned</h1><br><img src=\"banned.png\" width=\"400\"></center><br><hr> Reason: ";
+
 $sCooldown="<h1>Error: You're posting too fast, or trying to post same text.</h1>";
 $sSticky="<p><b>Sticky</b> <b>##Admin##</b></p><p><img src=\"terry.jpg\" width=\"200\" align=\"left\">Best programmer ever lived <br> <b>THIS IS SFW (SAFE FOR WORK) BOARD.</b><br>Please, keep topics technology, DIY or science related.</p><br clear=\"left\"><hr>";
 $sCapthaFail="<h1>Error: Captcha is missing or wrong</h1>";
 
-//Settings 
 $webmLogo="webm.jpg";
 $logo="logo.png";
 $background="bgcolor=\"white\"";//background=\"bg.png\"
 $database="private/posts.csv";
 $bans="private/bans.csv";
 $pictures="images/";
-$maxThreads=100;
+$maxThreads=15;
 $maxPostLength=1500;
 $maxUpload=4096+2048;
 $maxLines=30;
 $cooldown=10;
-$wipe=120;
 $thumbnails="thumbnails";
-$salt="penis";
+$salt="penis1";
+
 $cookiesEnabled=FALSE;
 
 function showOP($digits, $name, $replies, $sReplies, $pictures, $webmLogo, $thumbnails, $text){
@@ -164,16 +163,7 @@ function loadDatabase(){
     }
 }
 function loadBans(){
-    global $bans, $sDatabaseError;
-    if (($file=fopen("$bans", "r"))!==FALSE){
-        while(($data=fgetdb($file))!==FALSE){
-            $databaseArray[$data[0]]=$data[1];
-        }
-        fclose($file);
-        return $databaseArray;
-    }else{
-        showAndDie($sDatabaseError);
-    }
+    
 }
 function showThreads(){
     global $pictures, $sReplies, $webmLogo, $thumbnails;
@@ -193,7 +183,7 @@ function showThreads(){
     }
 }
 function putIp($post, $time) {
-    //Proprietary
+   
 }
 function showThread($dig){
     global $pictures, $sThreadNotFound, $webmLogo, $thumbnails;
@@ -238,14 +228,6 @@ function getPostText(){
         showAndDie($sPostTooLong);
     }
     $txt=$txt."\n";
-    $txt=str_replace("gay admin", "cool admin", $txt);
-    $txt=str_replace("admin is gay", "admin is Chad", $txt);
-    $txt=str_replace("admin is faggot", "admin is ubermensch", $txt);
-    $txt=str_replace("admin is fag", "admin is genius", $txt);
-    $txt=str_replace("admin is a gay", "admin is Chad", $txt);
-    $txt=str_replace("admin is a faggot", "admin is ubermensch", $txt);
-    $txt=str_replace("admin is a fag", "admin is genius", $txt);
-    $txt=str_replace("shitty admin", "awesome admin", $txt);
     $txt=str_replace("&", "&amp;", $txt);
     $txt=str_replace("'", "&#039;", $txt);
     $txt=str_replace("\"", "&quot;", $txt);
@@ -270,117 +252,84 @@ function getPostText(){
     return $txt;
 }
 function uploadImage($newPost){
-    global $pictures, $thumbnails, $maxUpload;
+    global $pictures, $thumbnails, $maxUpload, $sWrongExt;
     $check=getimagesize($_FILES["postFile"]["tmp_name"]);
-    $imageFileType = strtolower(pathinfo($_FILES["postFile"]["name"],PATHINFO_EXTENSION));
-    if ($imageFileType=="webm"){
-        $check=TRUE;
-    }
-    if ($check!==FALSE){
-        if($_FILES["postFile"]["size"] <= $maxUpload*1024){
-            if ($imageFileType=="webm"){
-                move_uploaded_file($_FILES["postFile"]["tmp_name"],$pictures."/".$newPost."t.".$imageFileType);
-                exec('ffmpeg -i '.$pictures."/".$newPost."t.".$imageFileType.' -c:v libvpx -crf 63  -b:v 250K '.$pictures."/".$newPost.".webm".' 2>&1');
-                unlink($pictures."/".$newPost."t.".$imageFileType);
-                
-                return "webm";
-            }
-            if($imageFileType == "jpg" || $imageFileType == "png" || $imageFileType == "jpeg" || $imageFileType == "gif" || $imageFileType == "webp" || $imageFileType == "webm"){
-                move_uploaded_file($_FILES["postFile"]["tmp_name"],$pictures."/".$newPost."t.".$imageFileType);
-                if($imageFileType!="webm"){
-                    if ($imageFileType == "gif"){
-                        exec('ffmpeg -i '.$pictures."/".$newPost."t.".$imageFileType.' -c:v libvpx -crf 63 -threads 0 -auto-alt-ref 0 -an -b:v 250K '.$pictures."/".$newPost.".webm".' 2>&1', $output);
-                        //print_r($output);
-                        //unlink($pictures."/".$newPost."t.".$imageFileType);
-                        //die;
-                    }else{
-                        $imagick=new \Imagick(realpath($pictures."/".$newPost."t.".$imageFileType));
-                            //$imagick->setCompressionQuality(1);
-                        $imagick->resizeImage(250,250,Imagick::FILTER_POINT,1,TRUE);
-                        $imagick->setImageBackgroundColor('white');
-                        $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
-                        $imagick->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
-                        $imagick->setImageCompression(\Imagick::COMPRESSION_JPEG);
-                        $imagick->setImageCompressionQuality(13);
-                        $imagick->setFormat("jpg");
-                        $imagick->writeImage("$thumbnails/$newPost.jpg");
-                    
-                        $imagick=new \Imagick(realpath($pictures."/".$newPost."t.".$imageFileType));
-                        $imagick->resizeImage($imagick->getImageWidth()+5,$imagick->getImageHeight()+5 ,Imagick::FILTER_CUBIC,1,TRUE);
-                        $imagick->setImageBackgroundColor('white');
-                        $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
-                        $imagick->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
-                        $imagick->setImageCompression(\Imagick::COMPRESSION_JPEG);
-                        //$imagick->addNoiseImage(\Imagick::NOISE_GAUSSIAN, \imagick::CHANNEL_DEFAULT);
-                        $imagick->setImageCompressionQuality(50);
-                        $imagick->setFormat("jpg");
-                        $imagick->writeImage("$pictures/$newPost.jpg");
-                        
-                    }
-                    unlink($pictures."/".$newPost."t.".$imageFileType);
-                }
-            }
+    $imageFileType=strtolower(pathinfo($_FILES["postFile"]["name"], PATHINFO_EXTENSION));
+    if($imageFileType!="jpg" && $imageFileType!="png" && $imageFileType!="jpeg" && $imageFileType!="gif" && $imageFileType!="webp" && $imageFileType!="webm" && $_FILES["postFile"]["name"]!=""){
+        showAndDie($sWrongExt);
+    }else{
+        if($check && $_FILES["postFile"]["size"] <= $maxUpload*1024){
+            move_uploaded_file($_FILES["postFile"]["tmp_name"], $pictures."/".$newPost.".".$imageFileType);
+            $imagick=new \Imagick(realpath($pictures."/".$newPost.".".$imageFileType));
+            //$imagick->setCompressionQuality(1);
+            $imagick->resizeImage(300,300,Imagick::FILTER_SINC,1,TRUE);
+            $imagick->setImageBackgroundColor('white');
+            $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
+            $imagick->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
+            $imagick->setImageCompression(\Imagick::COMPRESSION_JPEG);
+            $imagick->setImageCompressionQuality(70);
+            $imagick->setFormat("jpg");
+            $imagick->writeImage("$thumbnails/$newPost.jpg");
+        }elseif ($imageFileType=="webm" && $_FILES["postFile"]["size"] <= $maxUpload*1024){
+            move_uploaded_file($_FILES["postFile"]["tmp_name"], $pictures."/".$newPost.".".$imageFileType);
         }
     }
 }
 function posting($captcha){
-     global $sThreadNotFound, $sLockError, $sDatabaseError, $database, $maxThreads, $sCooldown,$cooldown, $wipe, $maxUpload, $pictures, $thumbnails, $sCapthaFail;
-     if ($dig=htmlspecialchars($_GET["thread"])){
+    global $sThreadNotFound, $sLockError, $sDatabaseError, $database, $maxThreads, $sCooldown,$cooldown, $maxUpload, $pictures, $thumbnails, $sCapthaFail;
+    if ($dig=htmlspecialchars($_GET["thread"])){
         if (loadDatabase()[$dig][0]!="T"){
             ($sThreadNotFound);
         }
-     }
-     $postTime=time();
-     if (isset($_POST["postButton"])){
-        if (!$captcha){
+    }
+    $postTime=time();
+    if(isset($_POST["postButton"])){
+        if(!$captcha){
             showAndDie($sCapthaFail);
         }
-        $name=getName();
-        $txt=getPostText();
-        if(($file=fopen("$database", "r+"))!=FALSE){
-            if(flock($file, LOCK_EX)==FALSE){
-                flock($file, LOCK_UN);
-                fclose($file);
-                showAndDie($sLockError);
-            }
-            $currentPost=array();
-            $lastPost=fgetdb($file);
-            if(($lastPost[4]==getIp() && $postTime-$lastPost[5]<$cooldown)||($lastPost[2]==$txt && $postTime-$lastPost[5]<$wipe)){
-                flock($file, LOCK_UN);
-                fclose($file);
-                showAndDie($sCooldown);
-            }
-            rewind($file);
-            if($dig=htmlspecialchars($_GET["thread"])){
-                $newPost=fgetdb($file)[0]+1;
-                $currentPosts[]=($newPost . "\t$dig\t". "$txt\t" . "$name\t" . getIp() . "\t$postTime" . "\n");
-            }else{
-                $newPost=fgetdb($file)[0]+1;
-                $currentPosts[]=($newPost . "\tT\t". "$txt\t" . "$name\t" . getIp() . "\t$postTime"  . "\n");
-            }
-            rewind($file);
-            while ((($temp=fgets($file))!==FALSE)){
-                $currentPosts[]=$temp;
-            }
-            rewind($file);
-            foreach ($currentPosts as $entry){
-                fwrite($file, $entry);
-            }
-            flock($file, LOCK_UN);
-            fclose($file);
-            uploadImage($newPost);
-            putIp($newPost, $postTime);
-            if ($dig=htmlspecialchars($_GET["thread"])){
-                ob_end_clean();
-                header('Location: '.$_SERVER['PHP_SELF']."?thread=$dig");
-            }else{
-                ob_end_clean();
-                header('Location: '.$_SERVER['PHP_SELF']."?thread=$newPost");
-            }
-        }else{
-            showAndDie($sDatabaseError);
+        $postTime=time();
+        $data=loadDatabase();
+        $lastDigits = key($data);
+        if($data[$lastDigits][3]==getIp() && $postTime-$data[$lastDigits][4]<$cooldown){
+            showAndDie($sCooldown);
         }
-     }
+        $txt=getPostText();
+        $name=getName();
+        if($dig=htmlspecialchars($_GET["thread"])){
+            $newEntry=($lastDigits+1)."\t$dig\t$txt\t$name\t".getIp()."\t$postTime\n";
+            $threads[]=$dig;
+        }else{
+            $newEntry=($lastDigits+1)."\tT\t$txt\t$name\t".getIp()."\t$postTime\n";
+            $threads[]=$lastDigits+1;
+        }
+        foreach($data as $digits => $post){
+            if (sizeof($threads)<$maxThreads+1){
+                if($post[0]=="T" && !in_array($digits,$threads)){
+                    $threads[]=$digits;
+                }elseif (!in_array($post[0],$threads)) {
+                    $threads[]=$post[0];
+                }
+            }
+            if(in_array($post[0],$threads) && $post[0]!="T"){
+                $newEntry=$newEntry."$digits\t".$post[0]."\t".$post[1]."\t".$post[2]."\t".$post[3]."\t".$post[4]."\n";
+            }elseif($post[0]=="T" && in_array($digits,$threads)){
+                $newEntry=$newEntry."$digits\t".$post[0]."\t".$post[1]."\t".$post[2]."\t".$post[3]."\t".$post[4]."\n";
+            }else{
+                $image=glob("$pictures/$digits.*");
+                unlink($image[0]);
+                $image=glob("$thumbnails/$digits.*");
+                unlink($image[0]);
+            }
+            
+        }
+        if(file_put_contents($database, $newEntry, LOCK_EX)==FALSE){
+            showAndDie($sLockError);
+        }
+        uploadImage($lastDigits+1);
+        
+        redirect($_SERVER['PHP_SELF']."?thread=".($lastDigits+1) );
+        
+    }
 }
 function darkMode(){
     if ("yes"==htmlspecialchars($_GET["black"])){
@@ -394,18 +343,13 @@ function darkMode(){
     }
 }
 function checkBan(){
-    global $sBan;
-    $bans=loadBans();
-    if(array_key_exists(GetIp(), $bans)){
-        echo "$sBan".$bans[GetIp()];
-        die;
-    }
+    
 }
 function captchaGen(){
-    //Proprietary
+    
 }
 function captchaCheck(){
-    //Proprietary
+    
 }
 function showStream(){
     global $pictures, $sReplies, $webmLogo, $thumbnails;
@@ -444,5 +388,5 @@ if (htmlspecialchars($_GET["stream"])=="yes"){
         showThreads();
     }
 }
-echo "<center>Shittyboard V4.5<br><a href=\"".$_SERVER["PHP_SELF"]."?black=yes\">[Dark mode]</a> <a href=\"".$_SERVER["PHP_SELF"]."?black=no\">[Normal mode]</a><br><a href=\"".$_SERVER["PHP_SELF"]."?stream=yes\">[All posts]</a><a href=\"".$_SERVER["PHP_SELF"]."?stream=no\">[Show threads]</a><br><a href=\"report.php\">[Report]</a><br>All trademarks and copyrights on this page are owned by their respective parties. Images uploaded are the responsibility of the Poster. Comments are owned by the Poster.</center>";
+echo "<center>Shittyboard V5.0<br><a href=\"".$_SERVER["PHP_SELF"]."?black=yes\">[Dark mode]</a> <a href=\"".$_SERVER["PHP_SELF"]."?black=no\">[Normal mode]</a><br><a href=\"".$_SERVER["PHP_SELF"]."?stream=yes\">[All posts]</a><a href=\"".$_SERVER["PHP_SELF"]."?stream=no\">[Show threads]</a><br><a href=\"report.php\">[Report]</a><br>All trademarks and copyrights on this page are owned by their respective parties. Images uploaded are the responsibility of the Poster. Comments are owned by the Poster.</center>";
 ?>
