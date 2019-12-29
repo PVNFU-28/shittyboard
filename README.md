@@ -3,7 +3,7 @@ Imageboard engine written in PHP, that uses CSV-like file as database
 ## Configuring settings
 Settings are stored in PHP file, as global variables. 
 Description of those settings:
-* Variables that begin with "$s" are UI strings. This might be useful if you would like to translate UI. 
+* Variables that begin with "$s" are UI strings. This might be useful if you want to translate UI. 
 * $webmLogo - path to webm icon image
 * $logo - path to logo image
 * $background - sets <body> parameters.
