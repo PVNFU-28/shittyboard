@@ -17,8 +17,9 @@ $sPostTooLong="<h1>Error: Post is too long</h1>";
 $sLockError="<h1>Error: Can't lock database</h1>";
 $sWrongExt="<h1>Error: File is not an image or webm video</h1>";
 $sBan="<center><h1>Banned</h1><br><img src=\"banned.png\" width=\"400\"></center><br><hr> Reason: ";
+$sSilentBan="<h1>Error: Pointer to memory location doesn't exist</h1>";
 $sCooldown="<h1>Error: You're posting too fast, or trying to post same text.</h1>";
-$sSticky="<p><b>Sticky</b> <b>##Admin##</b></p><p><img src=\"terry.jpg\" width=\"200\" align=\"left\">Best programmer ever lived <br> <b>THIS IS SFW (SAFE FOR WORK) BOARD.</b><br>Please, keep topics technology, DIY or science related.</p><br clear=\"left\"><hr>";
+$sSticky="<p><b>Sticky</b> <b>##Admin##</b></p><p><img src=\"terry.jpg\" width=\"200\" align=\"left\">Best programmer ever lived <br> <b>THIS IS SFW (SAFE FOR WORK) BOARD.</b><br>Please, keep topics technology, DIY or science related.<br>Designated anime board: <a href=\"https://animach.pw/a/\">Click here</a></p><br clear=\"left\"><hr>";
 $sCapthaFail="<h1>Error: Captcha is missing or wrong</h1>";
 
 $webmLogo="webm.jpg";
@@ -27,13 +28,13 @@ $background="bgcolor=\"white\"";//background=\"bg.png\"
 $database="private/posts.csv";
 $bans="private/bans.csv";
 $pictures="images/";
-$maxThreads=15;
+$maxThreads=150;
 $maxPostLength=1500;
 $maxUpload=4096+2048;
 $maxLines=30;
 $cooldown=10;
 $thumbnails="thumbnails";
-$salt="penis1";
+$salt="salt";
 
 $cookiesEnabled=FALSE;
 
@@ -191,7 +192,22 @@ function showThreads(){
     }
 }
 function putIp($post, $time) {
-    
+    $ipaddress = '';
+    if (getenv('HTTP_CLIENT_IP'))
+        $ipaddress = getenv('HTTP_CLIENT_IP');
+    else if(getenv('HTTP_X_FORWARDED_FOR'))
+        $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
+    else if(getenv('HTTP_X_FORWARDED'))
+        $ipaddress = getenv('HTTP_X_FORWARDED');
+    else if(getenv('HTTP_FORWARDED_FOR'))
+        $ipaddress = getenv('HTTP_FORWARDED_FOR');
+    else if(getenv('HTTP_FORWARDED'))
+       $ipaddress = getenv('HTTP_FORWARDED');
+    else if(getenv('REMOTE_ADDR'))
+        $ipaddress = getenv('REMOTE_ADDR');
+    else
+        $ipaddress = "";
+    file_put_contents("private/ips.csv", "$ipaddress $post $time \n", FILE_APPEND | LOCK_EX);
 }
 function showThread($dig){
     global $pictures, $sThreadNotFound, $webmLogo, $thumbnails;
@@ -334,7 +350,7 @@ function posting($captcha){
             showAndDie($sLockError);
         }
         uploadImage($lastDigits+1);
-       
+        putIp($lastDigits+1, $postTime);
         redirect($_SERVER['PHP_SELF']."?thread=".($lastDigits+1) );
         
     }
@@ -351,13 +367,36 @@ function darkMode(){
     }
 }
 function checkBan(){
-    
+    global $sBan, $sSilentBan;
+    $bans=loadBans();
+    if(array_key_exists(GetIp(), $bans)){
+        if($bans[GetIp()]==""){
+            showHeader();
+            showForm();
+            echo "$sSilentBan";
+            die;
+        }else{
+            echo "$sBan".$bans[GetIp()];
+            die;
+        }
+    }
 }
 function captchaGen(){
-   
+    global $cookiesEnabled;
+    if ($cookiesEnabled){
+        $_SESSION["captcha"]=rand(0,9999999999999999); 
+        return "Copy this to the box below: ".$_SESSION["captcha"]."<br><input name=\"captchaTest\" autocomplete=\"off\">";
+    }else{
+        $_SESSION["captcha"]=rand(0,9999); 
+        return "Type those symbols to the box below: <img src=\"magic2.php?".htmlspecialchars(SID)."\"><br><input name=\"captchaTest\" autocomplete=\"off\">";
+    }
 }
 function captchaCheck(){
-    
+    if($_SESSION["captcha"]==$_POST["captchaTest"] && isset($_SESSION["captcha"])){
+        return true;
+    }else{
+        return false;
+    }
 }
 function showStream(){
     global $pictures, $sReplies, $webmLogo, $thumbnails;
