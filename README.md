@@ -1,5 +1,6 @@
 # shittyboard
 Imageboard engine written in PHP, that uses CSV-like file as database
+![Alt text](/Untitled.png?raw=true)
 ## Configuring settings
 Settings are stored in PHP file as global variables. 
 Description of those settings:
