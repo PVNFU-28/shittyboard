@@ -26,6 +26,3 @@ Description of those settings:
 1. Create file "/private/bans.csv"
 1. Create folder "images"
 1. Create folder "thumbnails"
-
-## Demo:
-https://shittyboard.ddns.net (Website might be unavailable, it is normal, it would mean that I lost interest in project)
