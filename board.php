@@ -2,26 +2,36 @@
 include 'settings.php';
 
 function htmlMeta(){
-    global $sBoardName;
+    global $sBoardName, $css;
     echo "<!DOCTYPE html>";
     echo '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />';
-    echo "<head><title>$sBoardName</title></head>";
+    echo "<head><title>$sBoardName</title>";
+    $sheets=glob("$css/*.css");
+    if(htmlspecialchars($_GET["css"])!==""){
+        setcookie("css", htmlspecialchars($_GET["css"]) , time()+3600*24*90);
+        redirect($_SERVER[PHP_SELF]);
+    }
+    ;
+    if (array_key_exists($_COOKIE["css"], $sheets)){
+        echo '<link rel="stylesheet" type="text/css" href="'.$sheets[$_COOKIE["css"]].'"';
+    }
+    echo "</head>";
 }
 function loadCookies(){
     global $key, $cooldown, $initialCooldown;
     if (!isset($_COOKIE["posts"]) || !isset($_COOKIE["lastPostTime"])){
-        setcookie("posts", openssl_encrypt(0, "AES-128-CBC", $key));
+        setcookie("posts", openssl_encrypt(0, "AES-128-CBC", $key), time()+3600*24*90);
         $tmp=time();
-        setcookie("lastPostTime", openssl_encrypt($tmp+$initialCooldown-$cooldown, "AES-128-CBC", $key));
+        setcookie("lastPostTime", openssl_encrypt($tmp+$initialCooldown-$cooldown, "AES-128-CBC", $key), time()+3600*24*90);
         
         redirect($_SERVER[PHP_SELF]);
     }
     $cookiePosts=openssl_decrypt($_COOKIE["posts"], "AES-128-CBC", $key);
     $cookieLastTime=openssl_decrypt($_COOKIE["lastPostTime"], "AES-128-CBC", $key);
     if ($cookieLastTime===FALSE || $cookiePosts===FALSE){
-        setcookie("posts", openssl_encrypt(0, "AES-128-CBC", $key));
+        setcookie("posts", openssl_encrypt(0, "AES-128-CBC", $key), time()+3600*24*90);
         $tmp=time();
-        setcookie("lastPostTime", openssl_encrypt($tmp+$initialCooldown-$cooldown, "AES-128-CBC", $key));
+        setcookie("lastPostTime", openssl_encrypt($tmp+$initialCooldown-$cooldown, "AES-128-CBC", $key), time()+3600*24*90);
         redirect($_SERVER[PHP_SELF]);
     }else{
         session_start();
@@ -31,8 +41,8 @@ function loadCookies(){
 }
 function writeCookie(){
     global $key;
-    setcookie("posts", openssl_encrypt($_SESSION["postQuantity"], "AES-128-CBC", $key));
-    setcookie("lastPostTime", openssl_encrypt($_SESSION["lastPostTime"], "AES-128-CBC", $key));
+    setcookie("posts", openssl_encrypt($_SESSION["postQuantity"], "AES-128-CBC", $key), time()+3600*24*90);
+    setcookie("lastPostTime", openssl_encrypt($_SESSION["lastPostTime"], "AES-128-CBC", $key), time()+3600*24*90);
 }
 function showOP($digits, $name, $replies, $sReplies, $pictures, $webmLogo, $thumbnails, $text){
     if ($replies!==FALSE){
@@ -313,10 +323,7 @@ function posting($captcha){
         
     }
 }
-function getCSS(){
-    global $css;
-    $sheets=glob("$css/*.css");
-}
+
 function checkBan(){
     global $sBan, $sSilentBan;
     $bans=loadBans();
@@ -374,6 +381,7 @@ function showStream(){
 
 
 loadCookies();
+htmlMeta();
 checkBan();
 posting(captchaCheck());
 if (htmlspecialchars($_GET["stats"])=="yes"){
