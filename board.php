@@ -36,11 +36,11 @@ $pictures="images/";
 $maxThreads=150;
 $maxPostLength=3000;
 $maxUpload=4096+2048;
-$maxLines=30;
+$maxLines=100;
 $report="report.php";
 $cooldown=60;
 $thumbnails="thumbnails";
-$salt="test";
+$salt="sal";
 $pro= 4;
 $proCooldown=10;
 $intialCooldown=120;
@@ -84,9 +84,13 @@ function redirect($url){
     header('Location: '.$url);
     die;
 }
+function coookieSet(){
+    setcookie("time", $_SESSION["time"], time()+60*60*24*90);
+    setcookie("postQuantity", $_SESSION["postQuantity"], time()+60*60*24*90);
+}
 function cookieCheck(){
     if (!isset($_COOKIE["time"])){
-        setcookie("time", time());
+        setcookie("time", time(),time()+60*60*24*90);
         if (htmlspecialchars($_GET["cookieCheck"])!="yes"){
             redirect($_SERVER["PHP_SELF"]."?cookieCheck=yes"."&thread=".htmlspecialchars($_GET["thread"]));
         }
@@ -106,9 +110,19 @@ function cookieCheck(){
         }
     }
     session_start();
-    if(!isset($_SESSION["postQuantity"])){
-                $_SESSION["time"]=time();
-                $_SESSION["postQuantity"]=0;
+    if (isset($_COOKIE["time"]) && is_int($_COOKIE["time"])){
+        $_SESSION["time"]=$_COOKIE["time"];
+    }else{
+        if (!isset($_SESSION["time"])){
+            $_SESSION["time"]=time();
+        }
+    }
+    if (isset($_COOKIE["postQuantity"]) && is_int($_COOKIE["postQuantity"])){
+        $_SESSION["postQuantity"]=$_COOKIE["postQuantity"];
+    }else{
+        if (!isset($_SESSION["time"])){
+            $_SESSION["postQuantity"]=0;
+        }
     }
     return TRUE;
 }
@@ -327,9 +341,14 @@ function posting($captcha){
         $data=loadDatabase();
         $lastDigits = key($data);
         if($data[$lastDigits][3]==getIp() && $postTime-$data[$lastDigits][4]<$cooldown && $_SESSION["postQuantity"] <= $pro){
-            showAndDie($sCooldown);
+            showAndDie($sCooldown."<br>". ($cooldown-($postTime-$data[$lastDigits][4])) . " s");
         }elseif ($data[$lastDigits][3]==getIp() && $postTime-$data[$lastDigits][4]<$proCooldown && $_SESSION["postQuantity"] > $pro){
-            showAndDie($sCooldown);
+           showAndDie($sCooldown."<br>". ($proCooldown-($postTime-$data[$lastDigits][4])) . " s");
+        }
+        if($postTime-$_SESSION["lastPostTime"]<$cooldown && $_SESSION["postQuantity"] <= $pro){
+            showAndDie($sCooldown."<br>". ($cooldown-($postTime-$data[$lastDigits][4])) . " s");
+        }elseif ($postTime-$_SESSION["lastPostTime"]<$proCooldown && $_SESSION["postQuantity"] > $pro){
+           showAndDie($sCooldown."<br>". ($proCooldown-($postTime-$data[$lastDigits][4])) . " s");
         }
         $txt=getPostText();
         $name=getName();
@@ -366,6 +385,7 @@ function posting($captcha){
         uploadImage($lastDigits+1);
         putIp($lastDigits+1, $postTime);
         $_SESSION["postQuantity"]+=1;
+        $_SESSION["lastPostTime"]=$postTime;
         redirect($_SERVER['PHP_SELF']."?thread=".($lastDigits+1) );
         
     }
@@ -448,6 +468,8 @@ if (htmlspecialchars($_GET["stream"])=="yes"){
     //echo $_SESSION["time"];
     if (time()-$_SESSION["time"]>$intialCooldown){
         showForm(captchaGen());
+    }else{
+        echo "Please wait for posting form to appear <hr>";
     }
     if($dig=htmlspecialchars($_GET["thread"])){
         showThread($dig);
@@ -457,5 +479,5 @@ if (htmlspecialchars($_GET["stream"])=="yes"){
     }
 }
 echo "<center><a href=\"".$_SERVER["PHP_SELF"]."?black=yes\">[Dark mode]</a> <a href=\"".$_SERVER["PHP_SELF"]."?black=no\">[Normal mode]</a><hr></center>";
-echo "<center>Shittyboard V5.1<br><a href=\"".$_SERVER["PHP_SELF"]."?stream=yes\">[$sStream]</a><a href=\"".$_SERVER["PHP_SELF"]."?stream=no\">[$sNormal]</a><br><a href=\"$report\">[$sReport]</a><br>$sLegal</center>";
+echo "<center>Shittyboard V5.2<br><a href=\"".$_SERVER["PHP_SELF"]."?stream=yes\">[$sStream]</a><a href=\"".$_SERVER["PHP_SELF"]."?stream=no\">[$sNormal]</a><br><a href=\"$report\">[$sReport]</a><br>$sLegal</center>";
 ?>
