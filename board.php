@@ -17,26 +17,33 @@ $sPostTooLong="<h1>Error: Post is too long</h1>";
 $sLockError="<h1>Error: Can't lock database</h1>";
 $sWrongExt="<h1>Error: File is not an image or webm video</h1>";
 $sBan="<center><h1>Banned</h1><br><img src=\"banned.png\" width=\"400\"></center><br><hr> Reason: ";
-$sSilentBan="<h1>Error: Pointer to memory location doesn't exist</h1>";
-$sCooldown="<h1>Error: You're posting too fast, or trying to post same text.</h1>";
-$sSticky="<p><b>Sticky</b> <b>##Admin##</b></p><p><img src=\"terry.jpg\" width=\"200\" align=\"left\">Best programmer ever lived <br> <b>THIS IS SFW (SAFE FOR WORK) BOARD.</b><br>Please, keep topics technology, DIY or science related.<br>Designated anime board: <a href=\"https://animach.pw/a/\">Click here</a></p><br clear=\"left\"><hr>";
+$sSilentBan="";
+$sCooldown="<h1>Error: You're posting too fast.</h1>";
+$sSticky="<p><b>Sticky</b> <b>##Admin##</b></p><p><img src=\"terry.jpg\" width=\"200\" align=\"left\">Best programmer ever lived <br> <b>THIS IS SFW (SAFE FOR WORK) BOARD.</b><br>Please, keep topics technology, DIY or science related.</p><br clear=\"left\"><hr>";
 $sCapthaFail="<h1>Error: Captcha is missing or wrong</h1>";
+$sStream="All posts";
+$sNormal="Show threads";
+$sReport="Report";
+$sLegal="All trademarks and copyrights on this page are owned by their respective parties. Images uploaded are the responsibility of the Poster. Comments are owned by the Poster.";
 
 $webmLogo="webm.jpg";
 $logo="logo.png";
 $background="bgcolor=\"white\"";//background=\"bg.png\"
 $database="private/posts.csv";
+$logging="private/ips.csv";
 $bans="private/bans.csv";
 $pictures="images/";
 $maxThreads=150;
-$maxPostLength=1500;
+$maxPostLength=3000;
 $maxUpload=4096+2048;
 $maxLines=30;
-$cooldown=10;
+$report="report.php";
+$cooldown=60;
 $thumbnails="thumbnails";
-$salt="salt";
-
-$cookiesEnabled=FALSE;
+$salt="test";
+$pro= 4;
+$proCooldown=10;
+$intialCooldown=120;
 
 function showOP($digits, $name, $replies, $sReplies, $pictures, $webmLogo, $thumbnails, $text){
     if ($replies!==FALSE){
@@ -78,47 +85,32 @@ function redirect($url){
     die;
 }
 function cookieCheck(){
-    global $cookiesEnabled;
-    if (!isset($_COOKIE["poke"])){
-        setcookie("poke", "yes");
+    if (!isset($_COOKIE["time"])){
+        setcookie("time", time());
         if (htmlspecialchars($_GET["cookieCheck"])!="yes"){
             redirect($_SERVER["PHP_SELF"]."?cookieCheck=yes"."&thread=".htmlspecialchars($_GET["thread"]));
         }
         //Maybe, user visits website for a first time
-        if (!isset($_COOKIE["poke"])){
+        if (!isset($_COOKIE["time"])){
             //User is a fucking paranoic. 
             ini_set("session.use_cookies", 0);
             ini_set("session.use_only_cookies", 0);
             ini_set("session.use_trans_sid", 1);
             ini_set("session.cache_limiter", "");
-            $cookiesEnabled=FALSE;
             session_start();
+            if(!isset($_SESSION["postQuantity"])){
+                $_SESSION["time"]=time();
+                $_SESSION["postQuantity"]=0;
+            }
             return FALSE;
         }
     }
-    $cookiesEnabled=TRUE;
     session_start();
+    if(!isset($_SESSION["postQuantity"])){
+                $_SESSION["time"]=time();
+                $_SESSION["postQuantity"]=0;
+    }
     return TRUE;
-    //Well, cookies are enabled.
-}
-function getIp() {
-    global $salt;
-    $ipaddress = '';
-    if (getenv('HTTP_CLIENT_IP'))
-        $ipaddress = getenv('HTTP_CLIENT_IP');
-    else if(getenv('HTTP_X_FORWARDED_FOR'))
-        $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
-    else if(getenv('HTTP_X_FORWARDED'))
-        $ipaddress = getenv('HTTP_X_FORWARDED');
-    else if(getenv('HTTP_FORWARDED_FOR'))
-        $ipaddress = getenv('HTTP_FORWARDED_FOR');
-    else if(getenv('HTTP_FORWARDED'))
-       $ipaddress = getenv('HTTP_FORWARDED');
-    else if(getenv('REMOTE_ADDR'))
-        $ipaddress = getenv('REMOTE_ADDR');
-    else
-        $ipaddress = "";
-    return md5($salt+$ipaddress+$salt);
 }
 function showAndDie($error){
     ob_end_clean();
@@ -192,7 +184,42 @@ function showThreads(){
     }
 }
 function putIp($post, $time) {
-    
+    global $logging;
+    $ipaddress = '';
+    if (getenv('HTTP_CLIENT_IP'))
+        $ipaddress = getenv('HTTP_CLIENT_IP');
+    else if(getenv('HTTP_X_FORWARDED_FOR'))
+        $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
+    else if(getenv('HTTP_X_FORWARDED'))
+        $ipaddress = getenv('HTTP_X_FORWARDED');
+    else if(getenv('HTTP_FORWARDED_FOR'))
+        $ipaddress = getenv('HTTP_FORWARDED_FOR');
+    else if(getenv('HTTP_FORWARDED'))
+       $ipaddress = getenv('HTTP_FORWARDED');
+    else if(getenv('REMOTE_ADDR'))
+        $ipaddress = getenv('REMOTE_ADDR');
+    else
+        $ipaddress = "";
+    file_put_contents($logging, "$ipaddress $post $time ".$_COOKIE["needful"]."\n", FILE_APPEND | LOCK_EX);
+}
+function getIp() {
+    global $salt;
+    $ipaddress = '';
+    if (getenv('HTTP_CLIENT_IP'))
+        $ipaddress = getenv('HTTP_CLIENT_IP');
+    else if(getenv('HTTP_X_FORWARDED_FOR'))
+        $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
+    else if(getenv('HTTP_X_FORWARDED'))
+        $ipaddress = getenv('HTTP_X_FORWARDED');
+    else if(getenv('HTTP_FORWARDED_FOR'))
+        $ipaddress = getenv('HTTP_FORWARDED_FOR');
+    else if(getenv('HTTP_FORWARDED'))
+       $ipaddress = getenv('HTTP_FORWARDED');
+    else if(getenv('REMOTE_ADDR'))
+        $ipaddress = getenv('REMOTE_ADDR');
+    else
+        $ipaddress = "";
+    return md5($salt+$ipaddress+$salt);
 }
 function showThread($dig){
     global $pictures, $sThreadNotFound, $webmLogo, $thumbnails;
@@ -285,7 +312,7 @@ function uploadImage($newPost){
     }
 }
 function posting($captcha){
-    global $sThreadNotFound, $sLockError, $sDatabaseError, $database, $maxThreads, $sCooldown,$cooldown, $maxUpload, $pictures, $thumbnails, $sCapthaFail;
+    global $sThreadNotFound, $sLockError, $sDatabaseError, $database, $maxThreads, $sCooldown,$cooldown, $maxUpload, $pictures, $thumbnails, $sCapthaFail, $proCooldown, $pro;
     if ($dig=htmlspecialchars($_GET["thread"])){
         if (loadDatabase()[$dig][0]!="T"){
             ($sThreadNotFound);
@@ -299,7 +326,9 @@ function posting($captcha){
         $postTime=time();
         $data=loadDatabase();
         $lastDigits = key($data);
-        if($data[$lastDigits][3]==getIp() && $postTime-$data[$lastDigits][4]<$cooldown){
+        if($data[$lastDigits][3]==getIp() && $postTime-$data[$lastDigits][4]<$cooldown && $_SESSION["postQuantity"] <= $pro){
+            showAndDie($sCooldown);
+        }elseif ($data[$lastDigits][3]==getIp() && $postTime-$data[$lastDigits][4]<$proCooldown && $_SESSION["postQuantity"] > $pro){
             showAndDie($sCooldown);
         }
         $txt=getPostText();
@@ -336,6 +365,7 @@ function posting($captcha){
         }
         uploadImage($lastDigits+1);
         putIp($lastDigits+1, $postTime);
+        $_SESSION["postQuantity"]+=1;
         redirect($_SERVER['PHP_SELF']."?thread=".($lastDigits+1) );
         
     }
@@ -367,17 +397,19 @@ function checkBan(){
     }
 }
 function captchaGen(){
-    global $cookiesEnabled;
-    if ($cookiesEnabled){
-        $_SESSION["captcha"]=rand(0,9999999999999999); 
-        return "Copy this to the box below: ".$_SESSION["captcha"]."<br><input name=\"captchaTest\" autocomplete=\"off\">";
-    }else{
-        $_SESSION["captcha"]=rand(0,9999); 
-        return "Type those symbols to the box below: <img src=\"magic2.php?".htmlspecialchars(SID)."\"><br><input name=\"captchaTest\" autocomplete=\"off\">";
+    global $pro;
+    if($_SESSION["postQuantity"]>$pro){
+        return "No captcha for you.";
     }
+    $_SESSION["captcha"]=rand(1000000000,9999999999); 
+    return "Type those symbols to the box below: <img src=\"magic2.php?".htmlspecialchars(SID)."\"><br><input name=\"captchaTest\" autocomplete=\"off\">";
+    
 }
 function captchaCheck(){
+    global $pro;
     if($_SESSION["captcha"]==$_POST["captchaTest"] && isset($_SESSION["captcha"])){
+        return true;
+    }elseif($_SESSION["postQuantity"]>$pro){
         return true;
     }else{
         return false;
@@ -412,7 +444,11 @@ showHeader();
 if (htmlspecialchars($_GET["stream"])=="yes"){
     showStream();
 }else{
-    showForm(captchaGen());
+    //echo time();
+    //echo $_SESSION["time"];
+    if (time()-$_SESSION["time"]>$intialCooldown){
+        showForm(captchaGen());
+    }
     if($dig=htmlspecialchars($_GET["thread"])){
         showThread($dig);
     }else{
@@ -420,5 +456,6 @@ if (htmlspecialchars($_GET["stream"])=="yes"){
         showThreads();
     }
 }
-echo "<center>Shittyboard V5.0<br><a href=\"".$_SERVER["PHP_SELF"]."?black=yes\">[Dark mode]</a> <a href=\"".$_SERVER["PHP_SELF"]."?black=no\">[Normal mode]</a><br><a href=\"".$_SERVER["PHP_SELF"]."?stream=yes\">[All posts]</a><a href=\"".$_SERVER["PHP_SELF"]."?stream=no\">[Show threads]</a><br><a href=\"report.php\">[Report]</a><br>All trademarks and copyrights on this page are owned by their respective parties. Images uploaded are the responsibility of the Poster. Comments are owned by the Poster.</center>";
+echo "<center><a href=\"".$_SERVER["PHP_SELF"]."?black=yes\">[Dark mode]</a> <a href=\"".$_SERVER["PHP_SELF"]."?black=no\">[Normal mode]</a><hr></center>";
+echo "<center>Shittyboard V5.1<br><a href=\"".$_SERVER["PHP_SELF"]."?stream=yes\">[$sStream]</a><a href=\"".$_SERVER["PHP_SELF"]."?stream=no\">[$sNormal]</a><br><a href=\"$report\">[$sReport]</a><br>$sLegal</center>";
 ?>
