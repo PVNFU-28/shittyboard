@@ -1,0 +1,33 @@
+body{
+    background-color: #1d1f21;
+    color: #c5c8c6;
+    word-wrap: break-word;
+}
+a {
+    color: #81a2be;
+} 
+a:hover {
+    color: #5f89ac;
+}
+textarea {
+    background-color: #282a2e;
+    color: #e0e0e0;
+    border: 1px solid #373b41;
+}
+input {
+    background-color: #282a2e;
+    color: #e0e0e0;
+    border: 1px solid #373b41;
+} 
+.greentext{
+    color: #789922;
+}
+.redtext {
+    color: #cc6666;
+}
+.bluetext {
+    color: #81a2be;
+}
+.orangetext {
+    color: #de935f;
+}
