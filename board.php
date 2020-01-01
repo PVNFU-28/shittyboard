@@ -457,8 +457,10 @@ function showStream(){
 }
 
 cookieCheck();
+
 checkBan();
 posting(captchaCheck());
+cookieSet();
 darkMode();
 showHeader();
 if (htmlspecialchars($_GET["stream"])=="yes"){
