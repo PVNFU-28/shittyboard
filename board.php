@@ -40,7 +40,7 @@ $maxLines=100;
 $report="report.php";
 $cooldown=60;
 $thumbnails="thumbnails";
-$salt="sal";
+$salt="test";
 $pro= 4;
 $proCooldown=10;
 $intialCooldown=120;
@@ -84,7 +84,7 @@ function redirect($url){
     header('Location: '.$url);
     die;
 }
-function coookieSet(){
+function cookieSet(){
     setcookie("time", $_SESSION["time"], time()+60*60*24*90);
     setcookie("postQuantity", $_SESSION["postQuantity"], time()+60*60*24*90);
 }
@@ -110,17 +110,19 @@ function cookieCheck(){
         }
     }
     session_start();
-    if (isset($_COOKIE["time"]) && is_int($_COOKIE["time"])){
+    if (is_numeric($_COOKIE["time"])){
         $_SESSION["time"]=$_COOKIE["time"];
+        
     }else{
         if (!isset($_SESSION["time"])){
             $_SESSION["time"]=time();
+            
         }
     }
-    if (isset($_COOKIE["postQuantity"]) && is_int($_COOKIE["postQuantity"])){
+    if (isset($_COOKIE["postQuantity"]) && is_numeric($_COOKIE["postQuantity"])){
         $_SESSION["postQuantity"]=$_COOKIE["postQuantity"];
     }else{
-        if (!isset($_SESSION["time"])){
+        if (!isset($_SESSION["postQuantity"])){
             $_SESSION["postQuantity"]=0;
         }
     }
@@ -457,12 +459,15 @@ function showStream(){
 }
 
 cookieCheck();
-
+cookieSet();
 checkBan();
 posting(captchaCheck());
-cookieSet();
 darkMode();
 showHeader();
+if (htmlspecialchars($_GET["stats"])=="yes"){
+    echo "PHP session posts: ".$_SESSION["postQuantity"]."<br>Cookie posts: ".$_COOKIE["postQuantity"]."<br>";
+    echo "PHP session time: ".$_SESSION["time"]."<br>Cookie time: ".$_COOKIE["time"]."<br>";
+}
 if (htmlspecialchars($_GET["stream"])=="yes"){
     showStream();
 }else{
