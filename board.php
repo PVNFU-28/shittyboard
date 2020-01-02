@@ -1,8 +1,8 @@
 <?php
 include 'settings.php';
-
+$cssSelect="";
 function htmlMeta(){
-    global $sBoardName, $css;
+    global $sBoardName, $css, $cssSelect;
     echo "<!DOCTYPE html>";
     echo '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />';
     echo "<head><title>$sBoardName</title>";
@@ -14,8 +14,15 @@ function htmlMeta(){
     ;
     if (array_key_exists($_COOKIE["css"], $sheets)){
         echo '<link rel="stylesheet" type="text/css" href="'.$sheets[$_COOKIE["css"]].'"';
+    }else{
+        setcookie("css",0);
+        echo '<link rel="stylesheet" type="text/css" href="'.$sheets[0].'"';
     }
     echo "</head>";
+    foreach(array_keys($sheets) as $x){
+    $cssSelect=$cssSelect."<a href=\"".$_SERVER[PHP_SELF]."?css=$x\">[Style $x]</a>";
+    }
+    $cssSelect=$cssSelect."<br>";
 }
 function loadCookies(){
     global $key, $cooldown, $initialCooldown;
@@ -281,7 +288,7 @@ function posting($captcha){
         if($postTime-$_SESSION["lastPostTime"]<$cooldown && $_SESSION["postQuantity"] <= $pro){
             showAndDie($sCooldown."<br>$sWait". ($cooldown-($postTime-$_SESSION["lastPostTime"])) . " $sSeconds");
         }elseif ($postTime-$_SESSION["lastPostTime"]<$proCooldown && $_SESSION["postQuantity"] > $pro){
-           showAndDie($sCooldown."<br>$sWait". ($cooldown-($postTime-$_SESSION["lastPostTime"])) . " $sSeconds");
+           showAndDie($sCooldown."<br>$sWait". ($proCooldown-($postTime-$_SESSION["lastPostTime"])) . " $sSeconds");
         }
         $txt=getPostText();
         $name=getName();
@@ -328,7 +335,9 @@ function checkBan(){
     global $sBan, $sSilentBan;
     $bans=loadBans();
     if(array_key_exists(GetIp(), $bans)){
-        if($bans[GetIp()]==""){
+        if(strstr($bans[GetIp()], "!!WARN!!")){
+            echo "<h1>".str_replace("!!WARN!!", "", $bans[GetIp()])."</h1><br>";
+        }elseif($bans[GetIp()]==""){
             showHeader();
             showForm();
             echo "$sSilentBan";
@@ -400,6 +409,6 @@ if (htmlspecialchars($_GET["stream"])=="yes"){
         showThreads();
     }
 }
-echo "<center>Shittyboard V5.3 beta<br><a href=\"".$_SERVER["PHP_SELF"]."?stream=yes\">[$sStream]</a><a href=\"".$_SERVER["PHP_SELF"]."?stream=no\">[$sNormal]</a><br><a href=\"$report\">[$sReport]</a><br>$sLegal</center>";
+echo "<center>Shittyboard V5.3 beta<br>$cssSelect<a href=\"".$_SERVER["PHP_SELF"]."?stream=yes\">[$sStream]</a><a href=\"".$_SERVER["PHP_SELF"]."?stream=no\">[$sNormal]</a><br><a href=\"$report\">[$sReport]</a><br>$sLegal</center>";
 
 ?>
