@@ -11,7 +11,6 @@ $sNameTooLong="<h1>Error: Name is too long</h1>";
 $sIllegalPost="<h1>Error: Illegal post</h1>";
 $sPostTooLong="<h1>Error: Post is too long</h1>";
 $sLockError="<h1>Error: Can't lock database</h1>";
-$sWrongExt="<h1>Error: File is not an image or webm video</h1>";
 $sBan="<center><h1>Banned</h1><br><img src=\"banned.png\" width=\"400\"></center><br><hr> Reason: ";
 $sSilentBan="";
 $sCooldown="<h1>Error: You're posting too fast.</h1>";
