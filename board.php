@@ -105,8 +105,8 @@ function fgetdb($file){
     }
 }
 function showHeader(){
-    global $sBoardName, $logo, $background;
-    echo "<body $background><center><a href=\"".$_SERVER['PHP_SELF']."\"><img src=$logo width=\"300\" height=\"100\"></a><h1>$sBoardName</h1><hr></center>";
+    global $sBoardName, $logo;
+    echo "<body><center><a href=\"".$_SERVER['PHP_SELF']."\"><img src=$logo width=\"300\" height=\"100\"></a><h1>$sBoardName</h1><hr></center>";
 }
 function showForm($captcha=""){
     global $sPostReply, $sPost, $sAnonymous;
