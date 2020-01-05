@@ -13,10 +13,10 @@ function htmlMeta(){
     }
     ;
     if (array_key_exists($_COOKIE["css"], $sheets)){
-        echo '<link rel="stylesheet" type="text/css" href="'.$sheets[$_COOKIE["css"]].'"';
+        echo '<link rel="stylesheet" type="text/css" href="'.$sheets[$_COOKIE["css"]].'">';
     }else{
         setcookie("css",0);
-        echo '<link rel="stylesheet" type="text/css" href="'.$sheets[0].'"';
+        echo '<link rel="stylesheet" type="text/css" href="'.$sheets[0].'">';
     }
     echo "</head>";
     foreach(array_keys($sheets) as $x){
