@@ -251,7 +251,7 @@ function uploadImage($newPost){
     $check=getimagesize($_FILES["postFile"]["tmp_name"]);
     $imageFileType=strtolower(pathinfo($_FILES["postFile"]["name"], PATHINFO_EXTENSION));
     if($imageFileType!="jpg" && $imageFileType!="png" && $imageFileType!="jpeg" && $imageFileType!="gif" && $imageFileType!="webp" && $imageFileType!="webm" && $_FILES["postFile"]["name"]!=""){
-        showAndDie($sWrongExt);
+        return FALSE;
     }else{
         if($check && $_FILES["postFile"]["size"] <= $maxUpload*1024){
             move_uploaded_file($_FILES["postFile"]["tmp_name"], $pictures."/".$newPost.".".$imageFileType);
