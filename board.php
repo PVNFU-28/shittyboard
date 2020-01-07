@@ -5,6 +5,7 @@ function htmlMeta(){
     global $sBoardName, $css, $cssSelect;
     echo "<!DOCTYPE html>";
     echo '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />';
+    header('Cache-Control: max-age=600');
     echo "<head><title>$sBoardName</title>";
     $sheets=glob("$css/*.css");
     if(htmlspecialchars($_GET["css"])!==""){
@@ -105,8 +106,8 @@ function fgetdb($file){
     }
 }
 function showHeader(){
-    global $sBoardName, $logo;
-    echo "<body><center><a href=\"".$_SERVER['PHP_SELF']."\"><img src=$logo width=\"300\" height=\"100\"></a><h1>$sBoardName</h1><hr></center>";
+    global $sBoardName, $logo, $background;
+    echo "<body $background><center><a href=\"".$_SERVER['PHP_SELF']."\"><img src=$logo width=\"300\" height=\"100\"></a><h1>$sBoardName</h1><hr></center>";
 }
 function showForm($captcha=""){
     global $sPostReply, $sPost, $sAnonymous;
@@ -271,7 +272,7 @@ function uploadImage($newPost){
     }
 }
 function posting($captcha){
-    global $sThreadNotFound, $sLockError, $sDatabaseError, $database, $maxThreads, $sCooldown,$cooldown, $maxUpload, $pictures, $thumbnails, $sCapthaFail, $proCooldown, $pro, $sSeconds, $sWait;
+    global $sThreadNotFound, $sLockError, $sDatabaseError, $database, $maxThreads, $sCooldown,$cooldown, $maxUpload, $pictures, $thumbnails, $sCapthaFail, $proCooldown, $pro, $sSeconds, $sWait, $bans;
     if ($dig=htmlspecialchars($_GET["thread"])){
         if (loadDatabase()[$dig][0]!="T"){
             ($sThreadNotFound);
@@ -353,18 +354,37 @@ function captchaGen(){
     if($_SESSION["postQuantity"]>$pro){
         return "No captcha for you.";
     }
-    $_SESSION["captcha"]=rand(1000000000,9999999999); 
-    return "Type those symbols to the box below: <img src=\"captcha.php?".htmlspecialchars(SID)."\"><br><input name=\"captchaTest\" autocomplete=\"off\">";
+    if ($_SESSION["captchaError"]>3){
+        showAndDie("<h1>Error: Automatic requests. </h1><br>Contact: shittyboard (at) protonmail.com");
+    }
+    $categories = glob("captcha/*" , GLOB_ONLYDIR);
+    shuffle($categories);
+    $_SESSION["correctPath"]=array_pop($categories);
+    $correctName=pathinfo($_SESSION["correctPath"], PATHINFO_FILENAME);
+    $incorrect[]=array_pop($categories);
+    $incorrect[]=array_pop($categories);
+    //var_dump($incorrect);
+    $_SESSION["incorrectPath"]=$incorrect;
+    $_SESSION["correctNumber"]=rand(0,99999);
+    //echo $_SESSION["correctNumber"];
+    return "Find image with <b>$correctName</b> and copy symbols from that image into the box below<br><img src=\"helper.php?".htmlspecialchars(SID)."\" style=\"width:auto; max-width:95%;\"><br><input name=\"captchaVerify\" autocomplete=\"off\">";
     
 }
+    
 function captchaCheck(){
     global $pro;
-    if($_SESSION["captcha"]==$_POST["captchaTest"] && isset($_SESSION["captcha"])){
+    if($_SESSION["correctNumber"]==$_POST["captchaVerify"] && isset($_SESSION["correctNumber"])){
+        $_SESSION["captchaError"]=0;
         return true;
     }elseif($_SESSION["postQuantity"]>$pro){
+        $_SESSION["captchaError"]=0;
         return true;
     }else{
+        if(isset($_POST["postButton"])){
+            $_SESSION["captchaError"]+=1;
+        }
         return false;
+        
     }
 }
 function showStream(){
@@ -401,14 +421,17 @@ showHeader();
 if (htmlspecialchars($_GET["stream"])=="yes"){
     showStream();
 }else{
-    showForm(captchaGen());
+    //showForm($cap=captchaGen());
     if($dig=htmlspecialchars($_GET["thread"])){
         showThread($dig);
+        showForm(captchaGen());
     }else{
+        showForm(captchaGen());
         echo "$sSticky";
         showThreads();
     }
+    
 }
-echo "<center>Shittyboard V5.3 beta<br>$cssSelect<a href=\"".$_SERVER["PHP_SELF"]."?stream=yes\">[$sStream]</a><a href=\"".$_SERVER["PHP_SELF"]."?stream=no\">[$sNormal]</a><br><a href=\"$report\">[$sReport]</a><br>$sLegal</center>";
+echo "<center>Shittyboard V5.4 beta<br>$cssSelect<a href=\"".$_SERVER["PHP_SELF"]."?stream=yes\">[$sStream]</a><a href=\"".$_SERVER["PHP_SELF"]."?stream=no\">[$sNormal]</a><br><a href=\"$report\">[$sReport]</a><br>$sLegal</center>";
 
 ?>
