@@ -52,3 +52,7 @@ $key="loh";//encrypting key for cookies
 Just download the repository, it should work.  
 You need to restrict access to database/posts.csv if you value privacy of your users.  
 Oh, and you might need imagick PHP lib and openSSL PHP lib. Maybe something else, I don't remember
+
+## DEMO
+https://shittyboard.ddns.net/ (may be down)
+mock-up: comming soon
