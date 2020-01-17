@@ -15,7 +15,7 @@ $sBan="<center><h1>Banned</h1><br><img src=\"banned.png\" width=\"400\"></center
 $sSilentBan="";
 $sCooldown="<h1>Error: You're posting too fast.</h1>";
 $sSticky="";
-$sCapthaFail="<h1>Error: Captcha is missing or wrong</h1>";
+$sCaptchaFail="<h1>Error: Captcha is missing or wrong</h1>";
 $sStream="All posts";
 $sNormal="Show threads";
 $sReport="Report";
