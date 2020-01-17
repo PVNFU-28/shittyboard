@@ -272,7 +272,7 @@ function uploadImage($newPost){
     }
 }
 function posting($captcha){
-    global $sThreadNotFound, $sLockError, $sDatabaseError, $database, $maxThreads, $sCooldown,$cooldown, $maxUpload, $pictures, $thumbnails, $sCapthaFail, $proCooldown, $pro, $sSeconds, $sWait, $bans;
+    global $sThreadNotFound, $sLockError, $sDatabaseError, $database, $maxThreads, $sCooldown,$cooldown, $maxUpload, $pictures, $thumbnails, $sCaptchaFail, $proCooldown, $pro, $sSeconds, $sWait, $bans;
     if ($dig=htmlspecialchars($_GET["thread"])){
         if (loadDatabase()[$dig][0]!="T"){
             ($sThreadNotFound);
@@ -281,7 +281,7 @@ function posting($captcha){
     $postTime=time();
     if(isset($_POST["postButton"])){
         if(!$captcha){
-            showAndDie($sCapthaFail);
+            showAndDie($sCaptchaFail);
         }
         $postTime=time();
         $data=loadDatabase();
