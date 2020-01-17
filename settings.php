@@ -36,8 +36,9 @@ $maxLines=100;
 $report="";
 $cooldown=60;
 $thumbnails="images/thumbnails";
-$pro= 4;
+$pro=4;
 $proCooldown=10;
 $initialCooldown=120;
 $key="loh";
+$ipsalt="secret";
 ?>
