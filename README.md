@@ -54,5 +54,6 @@ You need to restrict access to database/posts.csv if you value privacy of your u
 Oh, and you might need imagick PHP lib and openSSL PHP lib. Maybe something else, I don't remember
 
 ## DEMO
-https://shittyboard.ddns.net/ (may be down)
+https://shittyboard.ddns.net/ (may be down, and may contain offensive posts)
+
 mock-up: comming soon
