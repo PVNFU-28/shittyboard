@@ -22,7 +22,7 @@ $sBan="<center><h1>Banned</h1><br><img src=\"banned.png\" width=\"400\"></center
 $sSilentBan="";
 $sCooldown="<h1>Error: You're posting too fast.</h1>";
 $sSticky="";
-$sCapthaFail="<h1>Error: Captcha is missing or wrong</h1>";
+$sCaptchaFail="<h1>Error: Captcha is missing or wrong</h1>";
 $sStream="All posts";
 $sNormal="Show threads";
 $sReport="Report";
@@ -43,12 +43,18 @@ $maxLines=100; //Maximum lines per post
 $report=""; //Link to report form (ommited here)
 $cooldown=60;//Posting delay for newcomers
 $thumbnails="images/thumbnails";//Path for saving thumbnails
-$pro= 4;//Amount of posts required in order to become a professional poster
+$pro=4;//Amount of posts required in order to become a professional poster
 $proCooldown=10;//Delay for professional posters
 $initialCooldown=120;//Delay for first post
 $key="loh";//encrypting key for cookies
+$ipsalt="secret";//Salt for IP hash
 ```
 ## Lazy setup
 Just download the repository, it should work.  
 You need to restrict access to database/posts.csv if you value privacy of your users.  
 Oh, and you might need imagick PHP lib and openSSL PHP lib. Maybe something else, I don't remember
+
+## DEMO
+https://shittyboard.ddns.net/ (may be down, and may contain offensive posts)
+
+mock-up: comming soon
