@@ -179,7 +179,7 @@ function getIp() {
         $ipaddress = getenv('REMOTE_ADDR');
     else
         $ipaddress = "";
-    return $ipaddress;
+    return md5($ipaddress . $ipsalt);
 }
 function showThread($dig){
     global $pictures, $sThreadNotFound, $webmLogo, $thumbnails;
