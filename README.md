@@ -2,6 +2,7 @@
 Imageboard engine written in PHP, that uses CSV-like file as database
 ![Alt text](/Untitled.png?raw=true)
 ## Configuring settings
+
 Starting from version 5.3, configs are stored in separate PHP file (settings.php)
 ```php
 ini_set('display_errors', 1);// Remove this line, unless you want to debug something
