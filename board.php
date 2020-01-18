@@ -163,9 +163,12 @@ function showThreads(){
     }
 }
 function getIp() {
+    global $key;
     //Encryption of IP is an overkill
     $ipaddress = '';
-    if (getenv('HTTP_CLIENT_IP'))
+    if(getenv('REMOTE_ADDR'))
+        $ipaddress = getenv('REMOTE_ADDR');
+    else if (getenv('HTTP_CLIENT_IP'))
         $ipaddress = getenv('HTTP_CLIENT_IP');
     else if(getenv('HTTP_X_FORWARDED_FOR'))
         $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
@@ -175,11 +178,9 @@ function getIp() {
         $ipaddress = getenv('HTTP_FORWARDED_FOR');
     else if(getenv('HTTP_FORWARDED'))
        $ipaddress = getenv('HTTP_FORWARDED');
-    else if(getenv('REMOTE_ADDR'))
-        $ipaddress = getenv('REMOTE_ADDR');
     else
         $ipaddress = "";
-    return $ipaddress;
+    return openssl_encrypt($ipaddress . $ipsalt, "AES-128-CBC", $key);
 }
 function showThread($dig){
     global $pictures, $sThreadNotFound, $webmLogo, $thumbnails;
@@ -272,7 +273,7 @@ function uploadImage($newPost){
     }
 }
 function posting($captcha){
-    global $sThreadNotFound, $sLockError, $sDatabaseError, $database, $maxThreads, $sCooldown,$cooldown, $maxUpload, $pictures, $thumbnails, $sCapthaFail, $proCooldown, $pro, $sSeconds, $sWait, $bans;
+    global $sThreadNotFound, $sLockError, $sDatabaseError, $database, $maxThreads, $sCooldown,$cooldown, $maxUpload, $pictures, $thumbnails, $sCaptchaFail, $proCooldown, $pro, $sSeconds, $sWait, $bans;
     if ($dig=htmlspecialchars($_GET["thread"])){
         if (loadDatabase()[$dig][0]!="T"){
             ($sThreadNotFound);
@@ -281,7 +282,7 @@ function posting($captcha){
     $postTime=time();
     if(isset($_POST["postButton"])){
         if(!$captcha){
-            showAndDie($sCapthaFail);
+            showAndDie($sCaptchaFail);
         }
         $postTime=time();
         $data=loadDatabase();

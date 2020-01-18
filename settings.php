@@ -15,7 +15,7 @@ $sBan="<center><h1>Banned</h1><br><img src=\"banned.png\" width=\"400\"></center
 $sSilentBan="";
 $sCooldown="<h1>Error: You're posting too fast.</h1>";
 $sSticky="";
-$sCapthaFail="<h1>Error: Captcha is missing or wrong</h1>";
+$sCaptchaFail="<h1>Error: Captcha is missing or wrong</h1>";
 $sStream="All posts";
 $sNormal="Show threads";
 $sReport="Report";
@@ -36,8 +36,9 @@ $maxLines=100;
 $report="";
 $cooldown=60;
 $thumbnails="images/thumbnails";
-$pro= 4;
+$pro=4;
 $proCooldown=10;
 $initialCooldown=120;
 $key="loh";
+$ipsalt="secret";
 ?>
