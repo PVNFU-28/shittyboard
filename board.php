@@ -163,7 +163,7 @@ function showThreads(){
     }
 }
 function getIp() {
-    global $key;
+    global $key, $ipsalt;
     //Encryption of IP is an overkill
     $ipaddress = '';
     if(getenv('REMOTE_ADDR'))
